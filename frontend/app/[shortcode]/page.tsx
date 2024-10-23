@@ -1,5 +1,4 @@
 import { redirect } from 'next/navigation';
-import { API_BASE_URL } from '../api/links/route';
 
 export default async function ShortLinkRedirect({
   params,
@@ -10,5 +9,5 @@ export default async function ShortLinkRedirect({
   if (!shortcode) {
     redirect('/');
   }
-  redirect(`${API_BASE_URL}/${shortcode}`);
+  redirect(`${process.env.API_BASE_URL}/${shortcode}`);
 }
