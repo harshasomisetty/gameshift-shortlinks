@@ -14,13 +14,21 @@ async function fetchFromAPI(endpoint: string, options: RequestInit = {}) {
 }
 
 export async function POST(request: NextRequest) {
-  const { longUrl } = await request.json();
-  const result = await fetchFromAPI('/api/links', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ longUrl }),
-  });
-  return NextResponse.json(result);
+  try {
+    const { longUrl } = await request.json();
+    const result = await fetchFromAPI('/api/links', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ longUrl }),
+    });
+    return NextResponse.json(result);
+  } catch (error) {
+    console.error('Error in POST request:', error);
+    return NextResponse.json(
+      { error: 'Internal Server Error' },
+      { status: 500 },
+    );
+  }
 }
 
 export async function GET() {

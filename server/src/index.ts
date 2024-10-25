@@ -1,5 +1,6 @@
 import cors from 'cors';
 import express, { Request, Response } from 'express';
+import { nanoid } from 'nanoid';
 import redis from './lib/redis';
 
 const app = express();
@@ -18,7 +19,6 @@ app.post(
   '/api/links',
   async (req: Request<{}, {}, { longUrl: string }>, res: Response) => {
     const { longUrl } = req.body;
-    const { nanoid } = await import('nanoid');
     const shortCode = nanoid(6);
     await redis.hset(`shortlink:${shortCode}`, {
       longUrl,
