@@ -10,7 +10,7 @@ type ShortLink = {
 
 export default function Home() {
   const [links, setLinks] = useState<ShortLink[]>([]);
-  const [longUrl, setLongUrl] = useState('https://www.point.me');
+  const [longUrl, setLongUrl] = useState('');
 
   useEffect(() => {
     fetchLinks();
