@@ -11,6 +11,8 @@ type ShortLink = {
 export default function Home() {
   const [links, setLinks] = useState<ShortLink[]>([]);
   const [longUrl, setLongUrl] = useState('');
+  const [editingLink, setEditingLink] = useState<ShortLink | null>(null);
+  const [editLongUrl, setEditLongUrl] = useState('');
 
   useEffect(() => {
     fetchLinks();
@@ -43,6 +45,44 @@ export default function Home() {
     setLinks(links.filter((link) => link.shortCode !== shortCode));
   };
 
+  const startEditing = (link: ShortLink) => {
+    setEditingLink(link);
+    setEditLongUrl(link.longUrl);
+  };
+
+  const cancelEditing = () => {
+    setEditingLink(null);
+    setEditLongUrl('');
+  };
+
+  const updateLink = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingLink) return;
+
+    const res = await fetch('/api/links', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        shortCode: editingLink.shortCode,
+        longUrl: editLongUrl,
+      }),
+    });
+
+    if (res.ok) {
+      const updatedLink = await res.json();
+      setLinks(
+        links.map((link) =>
+          link.shortCode === updatedLink.shortCode
+            ? { ...link, longUrl: updatedLink.longUrl }
+            : link,
+        ),
+      );
+      cancelEditing();
+    } else {
+      console.error('Failed to update link');
+    }
+  };
+
   return (
     <main className="max-w-4xl mx-auto p-8">
       <h1 className="text-3xl font-bold mb-8 text-center">
@@ -70,25 +110,61 @@ export default function Home() {
         {links.map((link) => (
           <li
             key={link.shortCode}
-            className="bg-gray-100 p-4 rounded shadow-sm flex justify-between items-center"
+            className="bg-gray-100 p-4 rounded shadow-sm flex flex-col sm:flex-row sm:justify-between sm:items-center"
           >
-            <div>
-              <a
-                href={`/${link.shortCode}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-500 hover:underline"
-              >
-                {`${process.env.NEXT_PUBLIC_BASE_URL}/${link.shortCode}`}
-              </a>
-              <p className="text-sm text-gray-600 mt-1">{link.longUrl}</p>
-            </div>
-            <button
-              onClick={() => deleteLink(link.shortCode)}
-              className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition duration-200"
-            >
-              Delete
-            </button>
+            {editingLink?.shortCode === link.shortCode ? (
+              <form onSubmit={updateLink} className="w-full">
+                <input
+                  type="url"
+                  value={editLongUrl}
+                  onChange={(e) => setEditLongUrl(e.target.value)}
+                  className="w-full p-2 border border-gray-300 rounded mb-2"
+                  required
+                />
+                <div className="flex justify-end space-x-2">
+                  <button
+                    type="submit"
+                    className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition duration-200"
+                  >
+                    Save
+                  </button>
+                  <button
+                    onClick={cancelEditing}
+                    className="bg-gray-300 text-gray-700 px-3 py-1 rounded hover:bg-gray-400 transition duration-200"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <>
+                <div>
+                  <a
+                    href={`/${link.shortCode}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-500 hover:underline"
+                  >
+                    {`${process.env.NEXT_PUBLIC_BASE_URL}/${link.shortCode}`}
+                  </a>
+                  <p className="text-sm text-gray-600 mt-1">{link.longUrl}</p>
+                </div>
+                <div className="mt-2 sm:mt-0 space-x-2">
+                  <button
+                    onClick={() => startEditing(link)}
+                    className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600 transition duration-200"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => deleteLink(link.shortCode)}
+                    className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition duration-200"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </>
+            )}
           </li>
         ))}
       </ul>
