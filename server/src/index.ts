@@ -15,18 +15,26 @@ interface ShortLink {
   updatedAt?: number;
 }
 
-app.post(
-  '/api/links',
-  async (req: Request<{}, {}, { longUrl: string }>, res: Response) => {
-    const { longUrl } = req.body;
-    const shortCode = nanoid(6);
-    await redis.hset(`shortlink:${shortCode}`, {
-      longUrl,
-      createdAt: Date.now(),
-    });
-    res.json({ shortCode, longUrl });
-  },
-);
+// @ts-ignore
+app.post('/api/links', async (req: Request, res: Response) => {
+  const { longUrl, customShortCode } = req.body as {
+    longUrl: string;
+    customShortCode?: string;
+  };
+  const shortCode = customShortCode || nanoid(6);
+
+  // Check if the shortCode already exists
+  const exists = await redis.exists(`shortlink:${shortCode}`);
+  if (exists) {
+    return res.status(400).json({ error: 'Short code already exists' });
+  }
+
+  await redis.hset(`shortlink:${shortCode}`, {
+    longUrl,
+    createdAt: Date.now(),
+  });
+  res.json({ shortCode, longUrl });
+});
 
 app.get('/api/links', async (_req: Request, res: Response) => {
   const keys = await redis.keys('shortlink:*');

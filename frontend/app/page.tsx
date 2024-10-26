@@ -11,6 +11,7 @@ type ShortLink = {
 export default function Home() {
   const [links, setLinks] = useState<ShortLink[]>([]);
   const [longUrl, setLongUrl] = useState('');
+  const [customShortCode, setCustomShortCode] = useState('');
   const [editingLink, setEditingLink] = useState<ShortLink | null>(null);
   const [editLongUrl, setEditLongUrl] = useState('');
 
@@ -29,11 +30,17 @@ export default function Home() {
     const res = await fetch('/api/links', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ longUrl }),
+      body: JSON.stringify({ longUrl, customShortCode }),
     });
-    const newLink = await res.json();
-    setLinks([newLink, ...links]);
-    setLongUrl('');
+    if (res.ok) {
+      const newLink = await res.json();
+      setLinks([newLink, ...links]);
+      setLongUrl('');
+      setCustomShortCode('');
+    } else {
+      const error = await res.json();
+      alert(error.error);
+    }
   };
 
   const deleteLink = async (shortCode: string) => {
@@ -89,18 +96,25 @@ export default function Home() {
         Shortlink Generator
       </h1>
       <form onSubmit={createLink} className="mb-12">
-        <div className="flex">
+        <div className="flex flex-col space-y-2">
           <input
             type="url"
             value={longUrl}
             onChange={(e) => setLongUrl(e.target.value)}
             placeholder="Enter long URL"
             required
-            className="flex-grow border border-gray-300 rounded-l p-2 text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="border border-gray-300 rounded p-2 text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <input
+            type="text"
+            value={customShortCode}
+            onChange={(e) => setCustomShortCode(e.target.value)}
+            placeholder="Enter custom short code (optional)"
+            className="border border-gray-300 rounded p-2 text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <button
             type="submit"
-            className="bg-blue-500 text-white p-2 rounded-r hover:bg-blue-600 transition duration-200"
+            className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600 transition duration-200"
           >
             Create Shortlink
           </button>
