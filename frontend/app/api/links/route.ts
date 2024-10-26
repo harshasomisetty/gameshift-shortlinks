@@ -15,11 +15,11 @@ async function fetchFromAPI(endpoint: string, options: RequestInit = {}) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { longUrl } = await request.json();
+    const { longUrl, customShortCode } = await request.json();
     const result = await fetchFromAPI('/api/links', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ longUrl }),
+      body: JSON.stringify({ longUrl, customShortCode }),
     });
     return NextResponse.json(result);
   } catch (error) {
