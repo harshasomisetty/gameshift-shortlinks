@@ -9,21 +9,95 @@ type ShortLink = {
 };
 
 export default function Home() {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const [links, setLinks] = useState<ShortLink[]>([]);
   const [longUrl, setLongUrl] = useState('');
   const [customShortCode, setCustomShortCode] = useState('');
   const [editingLink, setEditingLink] = useState<ShortLink | null>(null);
   const [editLongUrl, setEditLongUrl] = useState('');
 
+  const fetchLinks = async () => {
+    try {
+      const res = await fetch('/api/links');
+      const data = await res.json();
+      setLinks(data);
+    } catch (error) {
+      console.error('Error fetching links:', error);
+    }
+  };
+
   useEffect(() => {
-    fetchLinks();
+    const authStatus = sessionStorage?.getItem('isLinkAdminAuthenticated');
+    setIsAuthenticated(authStatus === 'true');
+
+    if (authStatus === 'true') {
+      fetchLinks();
+    }
   }, []);
 
-  const fetchLinks = async () => {
-    const res = await fetch('/api/links');
-    const data = await res.json();
-    setLinks(data);
+  if (isAuthenticated === null) {
+    return (
+      <main className="max-w-4xl mx-auto p-8">
+        <div className="flex justify-center items-center">Loading...</div>
+      </main>
+    );
+  }
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+      const res = await fetch('/api/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password }),
+      });
+
+      if (res.ok) {
+        setIsAuthenticated(true);
+        sessionStorage?.setItem('isLinkAdminAuthenticated', 'true');
+        await fetchLinks();
+      } else {
+        alert('Invalid password');
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      alert('An error occurred');
+    } finally {
+      setIsLoading(false);
+      setPassword('');
+    }
   };
+
+  if (!isAuthenticated) {
+    return (
+      <main className="max-w-4xl mx-auto p-8">
+        <h1 className="text-3xl font-bold mb-8 text-center">Admin Login</h1>
+        <form onSubmit={handleLogin} className="max-w-md mx-auto">
+          <div className="flex flex-col space-y-4">
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Enter admin password"
+              className="border border-gray-300 rounded p-2 text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+            />
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600 transition duration-200 disabled:bg-blue-300"
+            >
+              {isLoading ? 'Logging in...' : 'Login'}
+            </button>
+          </div>
+        </form>
+      </main>
+    );
+  }
 
   const createLink = async (e: React.FormEvent) => {
     e.preventDefault();
